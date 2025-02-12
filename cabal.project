@@ -1,6 +1,14 @@
 packages: merkle-log.cabal
 optimization: 2
 
+source-repository-package
+    type: git
+    location: https://github.com/larskuhtz/hs-hashes
+    tag: 141ffcf37ae57472c148d47f334672681e9d7508
+
+package hashes
+    optimization: 2
+
 -- The following are all dependencies of GHC. 
 --
 allow-newer: *:Cabal

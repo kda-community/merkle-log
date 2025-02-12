@@ -1,7 +1,9 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PackageImports #-}
@@ -11,6 +13,7 @@
 {-# LANGUAGE UndecidableInstances #-}
 
 {-# OPTIONS_GHC -fno-warn-orphans #-}
+{-# LANGUAGE ConstraintKinds #-}
 
 -- |
 -- Module: Main
@@ -30,21 +33,28 @@ import Control.Monad.Trans.State.Strict
 import Criterion
 import Criterion.Main
 
-import "crypton" Crypto.Hash
-import qualified "cryptonite" Crypto.Hash as CR
+import Data.Hash.SHA2
+import Data.Hash.SHA3
+import Data.Hash.Blake2
+import "cryptonite" Crypto.Hash qualified as CR
 
-import qualified Data.ByteArray as BA
-import qualified Data.ByteString as B
-import qualified Data.HashTree as HT
+import Data.ByteArray qualified as BA
+import Data.ByteString qualified as B
+import Data.HashTree qualified as HT
 import Data.Maybe
 
 import GHC.Generics
 
+import System.IO.Unsafe
 import System.Random
+
+import Streaming.Prelude qualified as S
 
 -- internal modules
 
-import qualified Data.MerkleLog as ML
+import Data.MerkleLog qualified as ML
+import Data.MerkleLog.V1 qualified as MLV1
+import Data.MerkleLog.NullHash
 
 -- -------------------------------------------------------------------------- --
 -- Main
@@ -54,53 +64,111 @@ main = defaultMain
     [ env (return globalEnv) $ \ ~e -> bgroup "main"
         [ bgroup "create tree"
             [ bgroup "SHA512t_256"
-                [ createBench @(ML SHA512t_256) e
+                [ createBench @(ML Sha2_512_256) e
                 , createBench @(HT CR.SHA512t_256) e
                 ]
             , bgroup "SHA256"
-                [ createBench @(ML SHA256) e
+                [ createBench @(ML Sha2_256) e
                 , createBench @(HT CR.SHA256) e
                 ]
             , bgroup "SHA3_256"
-                [ createBench @(ML SHA3_256) e
+                [ createBench @(ML Sha3_256) e
                 , createBench @(HT CR.SHA3_256) e
                 ]
             , bgroup "BLAKE2b_256"
-                [ createBench @(ML Blake2b_256) e
+                [ createBench @(ML Blake2s256) e
+                ]
+            ]
+        , bgroup "create root"
+            [ bgroup "SHA512t_256"
+                [ rootBench @(ML Sha2_512_256) e
+                ]
+            , bgroup "SHA256"
+                [ rootBench @(ML Sha2_256) e
+                ]
+            , bgroup "SHA3_256"
+                [ rootBench @(ML Sha3_256) e
+                ]
+            , bgroup "BLAKE2b_256"
+                [ rootBench @(ML Blake2s256) e
                 ]
             ]
         , bgroup "create inclusion proof"
             [ bgroup "SHA512t_256"
-                [ proofBench @(ML SHA512t_256) e
+                [ proofBench @(ML Sha2_512_256) e
                 , proofBench @(HT CR.SHA512t_256) e
                 ]
             , bgroup "SHA256"
-                [ proofBench @(ML SHA256) e
+                [ proofBench @(ML Sha2_256) e
                 , proofBench @(HT CR.SHA256) e
                 ]
             , bgroup "SHA3_256"
-                [ proofBench @(ML SHA3_256) e
+                [ proofBench @(ML Sha3_256) e
                 , proofBench @(HT CR.SHA3_256) e
                 ]
-            , bgroup "BLAKE2b_256"
-                [ proofBench @(ML Blake2b_256) e
+            , bgroup "BLAKE2s256"
+                [ proofBench @(ML Blake2s256) e
                 ]
             ]
         , bgroup "verify inclusion proof"
             [ bgroup "SHA512t_256"
-                [ verifyBench @(ML SHA512t_256) e
+                [ verifyBench @(ML Sha2_512_256) e
                 , verifyBench @(HT CR.SHA512t_256) e
                 ]
             , bgroup "SHA256"
-                [ verifyBench @(ML SHA256) e
+                [ verifyBench @(ML Sha2_256) e
                 , verifyBench @(HT CR.SHA256) e
                 ]
             , bgroup "SHA3_256"
-                [ verifyBench @(ML SHA3_256) e
+                [ verifyBench @(ML Sha3_256) e
                 , verifyBench @(HT CR.SHA3_256) e
                 ]
-            , bgroup "BLAKE2b_256"
-                [ verifyBench @(ML Blake2b_256) e
+            , bgroup "BLAKE2s256"
+                [ verifyBench @(ML Blake2s256) e
+                ]
+            ]
+        ]
+    , bgroup "root comparisions"
+        [ bgroup "normalEnv"
+            [ env (return globalRootEnv) $ \ ~e -> bgroup "NullHash"
+                [ rootBench_treeRoot @(NullHash 32) e
+                , rootBench_root @(NullHash 32) e
+                , rootBench_rootIO @(NullHash 32) e
+                , rootBench_rootStreaming @(NullHash 32) e
+                ]
+            , env (return globalRootEnv) $ \ ~e -> bgroup "Sha2_256"
+                [ rootBench_treeRoot @(Sha2_256) e
+                , rootBench_root @(Sha2_256) e
+                , rootBench_rootIO @(Sha2_256) e
+                , rootBench_rootStreaming @(Sha2_256) e
+                ]
+            ]
+        , bgroup "smallBigEnv"
+            [ env (return smallBigGlobalRootEnv) $ \ ~e -> bgroup "NullHash"
+                [ rootBench_treeRoot @(NullHash 32) e
+                , rootBench_root @(NullHash 32) e
+                , rootBench_rootIO @(NullHash 32) e
+                , rootBench_rootStreaming @(NullHash 32) e
+                ]
+            , env (return smallBigGlobalRootEnv) $ \ ~e -> bgroup "Sha2_256"
+                [ rootBench_treeRoot @(Sha2_256) e
+                , rootBench_root @(Sha2_256) e
+                , rootBench_rootIO @(Sha2_256) e
+                , rootBench_rootStreaming @(Sha2_256) e
+                ]
+            ]
+        , bgroup "smallSmallEnv"
+            [ env (return smallSmallGlobalRootEnv) $ \ ~e -> bgroup "NullHash"
+                [ rootBench_treeRoot @(NullHash 32) e
+                , rootBench_root @(NullHash 32) e
+                , rootBench_rootIO @(NullHash 32) e
+                , rootBench_rootStreaming @(NullHash 32) e
+                ]
+            , env (return smallBigGlobalRootEnv) $ \ ~e -> bgroup "Sha2_256"
+                [ rootBench_treeRoot @(Sha2_256) e
+                , rootBench_root @(Sha2_256) e
+                , rootBench_rootIO @(Sha2_256) e
+                , rootBench_rootStreaming @(Sha2_256) e
                 ]
             ]
         ]
@@ -115,9 +183,11 @@ main = defaultMain
 
 leafCount :: Int
 leafCount = 10000
+-- leafCount = 100
 
 leafMaxSize :: Int
 leafMaxSize = 1000
+-- leafMaxSize = 8000
 
 type GlobalEnv = [B.ByteString]
 
@@ -128,11 +198,57 @@ globalEnv = evalState (replicateM leafCount genBytes) (mkStdGen 1)
         len <- state $ randomR (0, leafMaxSize)
         state $ genByteString len
 
+type GlobalRootEnv a = [ML.MerkleNodeType a]
+
+globalRootEnv :: GlobalRootEnv a
+globalRootEnv = evalState (replicateM leafCount genBytes) (mkStdGen 1)
+  where
+    genBytes = do
+        len <- state $ randomR (0, leafMaxSize)
+        ML.InputNode <$> state (genByteString len)
+
+smallSmallGlobalRootEnv :: GlobalRootEnv a
+smallSmallGlobalRootEnv = evalState (replicateM 30 genBytes) (mkStdGen 1)
+  where
+    genBytes = do
+        len <- state $ randomR (0, 400)
+        ML.InputNode <$> state (genByteString len)
+
+smallBigGlobalRootEnv :: GlobalRootEnv a
+smallBigGlobalRootEnv = evalState (replicateM 30 genBytes) (mkStdGen 1)
+  where
+    genBytes = do
+        len <- state $ randomR (0, 8000)
+        ML.InputNode <$> state (genByteString len)
+
 -- -------------------------------------------------------------------------- --
 -- Create Benchmark
 
 createBench :: forall a . Impl a => GlobalEnv -> Benchmark
 createBench = bench (label @a) . nf (tree @a)
+
+-- -------------------------------------------------------------------------- --
+-- Compute Root Benchmark
+
+rootBench :: forall a . Impl a => GlobalEnv -> Benchmark
+rootBench = bench (label @a) . nf (root @a)
+
+-- compute full merkle tree
+rootBench_treeRoot :: forall a . ML.MerkleHashAlgorithm a => GlobalRootEnv a -> Benchmark
+rootBench_treeRoot = bench "tree-root" . nf (MLV1.merkleTreeRoot . MLV1.merkleTree @a)
+
+rootBench_root :: forall a . ML.MerkleHashAlgorithm a => GlobalRootEnv a -> Benchmark
+rootBench_root = bench "root" . nf (ML.merkleRoot @a)
+
+-- IO with stack as lazy list
+rootBench_rootIO :: forall a . ML.MerkleHashAlgorithm a => GlobalRootEnv a -> Benchmark
+rootBench_rootIO = bench "root-io"
+    . nf (ML.merkleRoot @a)
+
+-- IO with stack as lazy list with monadic streaming API
+rootBench_rootStreaming :: forall a . ML.MerkleHashAlgorithm a => GlobalRootEnv a -> Benchmark
+rootBench_rootStreaming = bench "root-streaming"
+    . nf (unsafeDupablePerformIO . ML.merkleRootStream @a . S.each)
 
 -- -------------------------------------------------------------------------- --
 -- Proof Benchmark
@@ -186,7 +302,8 @@ class (NFData (Tree a), NFData (Root a), NFData (Proof a)) => Impl a where
 
     label :: String
     tree :: [B.ByteString] -> Tree a
-    root :: Tree a -> Root a
+    root :: [B.ByteString] -> Root a
+    treeRoot :: Tree a -> Root a
     proof :: Tree a -> B.ByteString -> Int -> Proof a
     verify :: Proof a -> Bool
 
@@ -194,8 +311,8 @@ class (NFData (Tree a), NFData (Root a), NFData (Proof a)) => Impl a where
 -- merkle-log
 
 data MLProof a = MLProof
-    {-# UNPACK #-} !(ML.MerkleProof a)
-    {-# UNPACK #-} !(ML.MerkleRoot a)
+    {-# UNPACK #-} !(MLV1.MerkleProof a)
+    {-# UNPACK #-} !(MLV1.MerkleRoot a)
         -- ^ Root of the Tree
     deriving (Generic)
 
@@ -203,24 +320,26 @@ instance NFData (MLProof a)
 
 data ML a
 
-instance HashAlgorithm a => Impl (ML a) where
-    type Tree (ML a) = ML.MerkleTree a
+instance ML.MerkleHashAlgorithm a => Impl (ML a) where
+    type Tree (ML a) = MLV1.MerkleTree a
     type Proof (ML a) = MLProof a
     type Root (ML a) = ML.MerkleRoot a
 
     label = "merkle-log"
-    tree = ML.merkleTree @a . fmap ML.InputNode
-    root = ML.merkleRoot
+    tree = MLV1.merkleTree @a . fmap ML.InputNode
+    treeRoot = MLV1.merkleTreeRoot @a
+    root = ML.merkleRoot . fmap ML.InputNode
     proof t ix i =
-        let p = case ML.merkleProof (ML.InputNode ix) i t of
+        let p = case MLV1.merkleTreeProof (ML.InputNode ix) i t of
                 Right x -> x
                 Left e -> error $ "proof creation failed in benchmark: " <> show e
-        in MLProof p (ML.merkleRoot t)
-    verify (MLProof p r) = ML.runMerkleProof p == r
+        in MLProof p (MLV1.merkleTreeRoot t)
+    verify (MLProof p r) = MLV1.runMerkleProof p == Just r
 
     {-# INLINE label #-}
     {-# INLINE tree #-}
     {-# INLINE root #-}
+    {-# INLINE treeRoot #-}
     {-# INLINE proof #-}
     {-# INLINE verify #-}
 
@@ -263,11 +382,12 @@ instance (CR.HashAlgorithm a) => Impl (HT a) where
 
     label = "hash-tree"
     tree = HT.fromList htSettings
-    root t = fromJust $ HT.digest (HT.size t) t
+    root = error "treeRoot is not supported"
+    treeRoot t = fromJust $ HT.digest (HT.size t) t
     proof t ix _ = HTProof
         (fromJust $ HT.generateInclusionProof (HT.hash1 (htSettings @a) ix) (HT.size t) t)
         ix
-        (root @(HT a) t)
+        (treeRoot @(HT a) t)
     verify (HTProof p subj r) = HT.verifyInclusionProof
         (htSettings @a) (HT.hash1 (htSettings @a) subj) r p
 
