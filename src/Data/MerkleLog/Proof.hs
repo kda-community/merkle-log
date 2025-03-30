@@ -105,7 +105,7 @@ composeProofs _ MerkleProof { _merkleProofClaim = InputNode _ } =
     throwM $ InvalidProofCompositionClaimType "composeProof"
 composeProofs a b@(MerkleProof { _merkleProofClaim = TreeNode n }) = do
     r <- runProof a
-    unless (r /= n) $
+    unless (r == n) $
         throwM $ InvalidProofCompositionClaimHash "composeProof"
             (Expected (sshow n))
             (Actual (sshow r))
