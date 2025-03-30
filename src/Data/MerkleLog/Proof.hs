@@ -94,6 +94,11 @@ data MerkleProof a = MerkleProof
 -- Verifying proofs is cheap and this function checks that the proofs are
 -- actually composable
 --
+-- NOTE: be careful when calling this function repeatedly. When you compose
+-- several proofs you should do it backward starting with the laste proof in
+-- order to avoid quadratic time complexity due to repeated verification of the
+-- right hand side proof prefixes.
+--
 composeProofs
     :: forall a m
     . MonadThrow m
@@ -119,13 +124,18 @@ composeProofs a b@(MerkleProof { _merkleProofClaim = TreeNode n }) = do
     trace = _merkleProofTrace a .|. shiftL (_merkleProofTrace b) al
     evidence = _merkleProofEvidence a <> _merkleProofEvidence b
 
+-- | This folds from right to left and runs in O(n) time.
+--
+-- Folding from left to right would result in quadratic time complexity, due to
+-- repeated verification of right hand side proof prefixes.
+--
 concatProofs
     :: forall a m
     . MonadThrow m
     => MerkleHashAlgorithm a
     => NE.NonEmpty (MerkleProof a)
     -> m (MerkleProof a)
-concatProofs = foldlM1 (composeProofs @a)
+concatProofs = foldrM1 (composeProofs @a)
 
 -- -------------------------------------------------------------------------- --
 -- Proof computation
