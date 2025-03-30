@@ -29,6 +29,7 @@ module Data.MerkleLog.Proof
 , runProof
 , runProofIO
 , composeProofs
+, composeProofsUnchecked
 , concatProofs
 , encodeProof
 , decodeProof
@@ -136,6 +137,30 @@ concatProofs
     => NE.NonEmpty (MerkleProof a)
     -> m (MerkleProof a)
 concatProofs = foldrM1 (composeProofs @a)
+
+-- | Compose proofs without checking that the proofs are composable. This avoids
+-- the overhead of verifying the proofs. In particular, it can be used to
+-- efficiently compose several proofs from left to right.
+--
+composeProofsUnchecked
+    :: forall a m
+    . MonadThrow m
+    => MerkleHashAlgorithm a
+    => MerkleProof a
+    -> MerkleProof a
+    -> m (MerkleProof a)
+composeProofsUnchecked _ MerkleProof { _merkleProofClaim = InputNode _ } =
+    throwM $ InvalidProofCompositionClaimType "composeProof"
+composeProofsUnchecked a b  = do
+    return $ MerkleProof
+        { _merkleProofClaim = _merkleProofClaim a
+        , _merkleProofTrace = trace
+        , _merkleProofEvidence = evidence
+        }
+  where
+    al = length (_merkleProofEvidence a)
+    trace = _merkleProofTrace a .|. shiftL (_merkleProofTrace b) al
+    evidence = _merkleProofEvidence a <> _merkleProofEvidence b
 
 -- -------------------------------------------------------------------------- --
 -- Proof computation
