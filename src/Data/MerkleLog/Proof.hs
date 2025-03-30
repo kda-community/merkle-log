@@ -104,7 +104,6 @@ composeProofs
 composeProofs _ MerkleProof { _merkleProofClaim = InputNode _ } =
     throwM $ InvalidProofCompositionClaimType "composeProof"
 composeProofs a b@(MerkleProof { _merkleProofClaim = TreeNode n }) = do
-    r <- runProof a
     unless (r == n) $
         throwM $ InvalidProofCompositionClaimHash "composeProof"
             (Expected (sshow n))
@@ -115,6 +114,7 @@ composeProofs a b@(MerkleProof { _merkleProofClaim = TreeNode n }) = do
         , _merkleProofEvidence = evidence
         }
   where
+    r = runProof a
     al = length (_merkleProofEvidence a)
     trace = _merkleProofTrace a .|. shiftL (_merkleProofTrace b) al
     evidence = _merkleProofEvidence a <> _merkleProofEvidence b
@@ -308,19 +308,13 @@ finalReduce ctx (Just c) pos idx t_ p_ l_ = do
 -- Verify Proof
 
 runProof
-    :: forall a m
-    . MonadThrow m
-    => MerkleHashAlgorithm a
+    :: forall a
+    . MerkleHashAlgorithm a
     => MerkleProof a
-    -> m (MerkleRoot a)
-runProof proof = case unsafeDupablePerformIO $ try (runProofIO proof) of
-    Left e -> throwM @_ @MerkleTreeException e
-    Right p -> return p
+    -> MerkleRoot a
+runProof = unsafeDupablePerformIO . runProofIO
+{-# INLINE runProof #-}
 
--- | Check a proof
---
--- There is no need to for low-level optimizations. Proofs are small.
---
 runProofIO
     :: forall a
     . MerkleHashAlgorithm a
@@ -329,17 +323,14 @@ runProofIO
 runProofIO proof = do
     ctx <- initialize @a
     h0 <- merkleLeafIO ctx $ _merkleProofClaim proof
-    go ctx (_merkleProofTrace proof) (h0 : _merkleProofEvidence proof)
+    go ctx (_merkleProofTrace proof) h0 (_merkleProofEvidence proof)
   where
-    go _ 0 [r] = return r
-    go ctx t (h0:h1:r) = do
+    go _ _ r [] = return r
+    go ctx t h0 (h1:r) = do
         !n <- if testBit t 0
             then merkleNodeIO ctx h1 h0
             else merkleNodeIO ctx h0 h1
-        go ctx (shiftR t 1) $ n : r
-    go _ _ _ = throwIO $ MalformedProofException
-        $ "proof-trace: " <> sshow (_merkleProofTrace proof)
-        <> ", proof-evidence: " <> sshow (_merkleProofEvidence proof)
+        go ctx (shiftR t 1) n r
 
 -- -------------------------------------------------------------------------- --
 -- Proof Serialization

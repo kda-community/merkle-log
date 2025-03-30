@@ -148,11 +148,11 @@ runProofV2 = do
         . BL.drop 2
         <$> BL.getContents
     p <- decodeProof @Alg bs
-    r <- runProof p
     B8.putStrLn $ (<>) "0x"
         $ extractBase16
         $ encodeBase16'
-        $ encodeMerkleRoot r
+        $ encodeMerkleRoot
+        $ runProof p
 
 -- | Check Proof creation and verification without serializing the proof
 --
@@ -160,11 +160,11 @@ checkV2 :: Int -> IO ()
 checkV2 pos = do
     ls <- fmap (InputNode . BL.toStrict) . BL8.lines <$> BL.getContents
     proof <- merkleProof @Alg pos ls
-    r <- runProof proof
     B8.putStrLn $ (<>) "0x"
         $ extractBase16
         $ encodeBase16'
-        $ encodeMerkleRoot r
+        $ encodeMerkleRoot
+        $ runProof proof
 
 main :: IO ()
 main = do

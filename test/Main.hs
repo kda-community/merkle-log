@@ -348,7 +348,7 @@ prop_proofV1 l (NonNegative i) = i < length l ==> V1.runMerkleProof p === Just (
 
 prop_proofV2 :: [MerkleNodeType H] -> NonNegative Int -> Property
 prop_proofV2 l (NonNegative i) = i < length l ==>
-    runProof p === Just (merkleRoot l)
+    runProof p === merkleRoot l
   where
     p = case merkleProof i l of
         Left e -> error (displayException e)
@@ -423,7 +423,7 @@ prop_proofInvalidClaimV2
     -> NonNegative Int
     -> Property
 prop_proofInvalidClaimV2 l (NonNegative i) = i < length l
-    ==> runProof p' =/= Just (merkleRoot l)
+    ==> runProof p' =/= merkleRoot l
   where
     p = case merkleProof i l of
         Left e -> error (displayException e)
@@ -451,7 +451,7 @@ prop_proofInvalidTraceV2
     -> Property
 prop_proofInvalidTraceV2 (UniqueInputs l) (NonNegative i)
     = length l > 1 && i < length l
-    ==> runProof (changeProofTraceV2 p) =/= Just (merkleRoot l)
+    ==> runProof (changeProofTraceV2 p) =/= merkleRoot l
   where
     p = case merkleProof i l of
         Left e -> error (displayException e)
@@ -474,7 +474,7 @@ prop_proofInvalidStepCountV2
     -> NonNegative Int
     -> Property
 prop_proofInvalidStepCountV2 (NonEmpty l) (NonNegative i)
-    = i > 0 && i < length l ==> runProof @_ @Maybe p =/=  runProof p'
+    = i > 0 && i < length l ==> runProof @_ p =/=  runProof p'
   where
     p = case merkleProof i l of
         Left e -> error (displayException e)
@@ -503,7 +503,7 @@ prop_proofInvalidEvidenceHashV2
     -> Property
 prop_proofInvalidEvidenceHashV2 (NonEmpty l) (NonNegative i)
     = 1 < length l && i < length l
-    ==> runProof (changeProofHashV2 p) =/= Just (merkleRoot l)
+    ==> runProof (changeProofHashV2 p) =/= merkleRoot l
   where
     p = case merkleProof i l of
         Left e -> error (displayException e)
@@ -524,8 +524,7 @@ prop_chainProofV2 t = do
     let proofs = (\(x, ls) -> fromJust (merkleProof @H x ls)) <$> st
     return $ t /= TreeEmpty ==> do
         p <- concatProofs @H @Maybe proofs
-        r <- runProof @H p
-        return $ r === treeV2Root t
+        return $ runProof @H p === treeV2Root t
 
 prop_encodeProofObjectV1 :: V1.MerkleProof H -> Property
 prop_encodeProofObjectV1 p
@@ -596,7 +595,7 @@ proofV2Tests = describe "V2 proof creation and verification" $ do
 v2ProofRoundtrip :: Natural -> Natural -> Spec
 v2ProofRoundtrip n pos = it msg $ do
     proof <- merkleProof @H (int pos) ls
-    shouldReturn (runProof @H proof) (merkleRoot ls)
+    shouldBe (runProof @H proof) (merkleRoot ls)
   where
     ls = InputNode . B.singleton . int <$> [0 .. n - 1]
     msg = "can create and verify proof of size " <> show n <> " at pos " <> show pos
