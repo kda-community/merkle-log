@@ -16,7 +16,7 @@ jobs:
       matrix:
         ghc: ['9.6', '9.8', '9.10']
         cabal: ['3.10']
-        os: ['ubuntu-22.04', 'ubuntu-20.04', 'macOS-latest']
+        os: ['ubuntu-22.04', 'ubuntu-24.04', 'macOS-latest']
 
     steps:
 
@@ -24,7 +24,7 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v3
     - name: Install GHC and Cabal
-      uses: haskell/actions/setup@v2
+      uses: haskell-actions/setup@v2
       with:
          ghc-version: ${{ matrix.ghc }}
          cabal-version: ${{ matrix.cabal }}
