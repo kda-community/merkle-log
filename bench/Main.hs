@@ -126,7 +126,7 @@ globalEnv = evalState (replicateM leafCount genBytes) (mkStdGen 1)
   where
     genBytes = do
         len <- state $ randomR (0, leafMaxSize)
-        state $ genByteString len
+        state $ uniformByteString len
 
 -- -------------------------------------------------------------------------- --
 -- Create Benchmark
