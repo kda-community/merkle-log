@@ -35,10 +35,10 @@ library
     build-depends:
         , base >=4.11 && <5
         , bytestring >=0.10
-        , crypton >=0.31
+        , crypton >=1.1.2
         , deepseq >=1.4
         , exceptions >=0.10
-        , memory >=0.14
+        , ram >=0.22
         , text >=1.2
 
 test-suite test
@@ -58,10 +58,10 @@ test-suite test
         , QuickCheck >=2.11
         , base >=4.11 && <5
         , bytestring >=0.10
-        , crypton >=0.31
+        , crypton >=1.1.2
         , deepseq >=1.4
         , exceptions >=0.10
-        , memory >=0.14
+        , ram >=0.22
 
 benchmark benchmarks
     type: exitcode-stdio-1.0
@@ -81,11 +81,10 @@ benchmark benchmarks
         , base >=4.11 && <5
         , bytestring >=0.10
         , criterion >=1.5
-        , crypton >=0.31
-        , cryptonite >=0.30
+        , crypton >=1.1.2
         , deepseq >=1.4
-        , hash-tree >=0.0
-        , memory >=0.14
+        , hash-tree >=0.1.0
+        , ram >=0.22
         , random >=1.2
         , transformers >= 0.6
 

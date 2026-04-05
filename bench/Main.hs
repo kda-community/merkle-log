@@ -30,8 +30,8 @@ import Control.Monad.Trans.State.Strict
 import Criterion
 import Criterion.Main
 
-import "crypton" Crypto.Hash
-import qualified "cryptonite" Crypto.Hash as CR
+import Crypto.Hash
+
 
 import qualified Data.ByteArray as BA
 import qualified Data.ByteString as B
@@ -55,15 +55,15 @@ main = defaultMain
         [ bgroup "create tree"
             [ bgroup "SHA512t_256"
                 [ createBench @(ML SHA512t_256) e
-                , createBench @(HT CR.SHA512t_256) e
+                , createBench @(HT SHA512t_256) e
                 ]
             , bgroup "SHA256"
                 [ createBench @(ML SHA256) e
-                , createBench @(HT CR.SHA256) e
+                , createBench @(HT SHA256) e
                 ]
             , bgroup "SHA3_256"
                 [ createBench @(ML SHA3_256) e
-                , createBench @(HT CR.SHA3_256) e
+                , createBench @(HT SHA3_256) e
                 ]
             , bgroup "BLAKE2b_256"
                 [ createBench @(ML Blake2b_256) e
@@ -72,15 +72,15 @@ main = defaultMain
         , bgroup "create inclusion proof"
             [ bgroup "SHA512t_256"
                 [ proofBench @(ML SHA512t_256) e
-                , proofBench @(HT CR.SHA512t_256) e
+                , proofBench @(HT SHA512t_256) e
                 ]
             , bgroup "SHA256"
                 [ proofBench @(ML SHA256) e
-                , proofBench @(HT CR.SHA256) e
+                , proofBench @(HT SHA256) e
                 ]
             , bgroup "SHA3_256"
                 [ proofBench @(ML SHA3_256) e
-                , proofBench @(HT CR.SHA3_256) e
+                , proofBench @(HT SHA3_256) e
                 ]
             , bgroup "BLAKE2b_256"
                 [ proofBench @(ML Blake2b_256) e
@@ -89,15 +89,15 @@ main = defaultMain
         , bgroup "verify inclusion proof"
             [ bgroup "SHA512t_256"
                 [ verifyBench @(ML SHA512t_256) e
-                , verifyBench @(HT CR.SHA512t_256) e
+                , verifyBench @(HT SHA512t_256) e
                 ]
             , bgroup "SHA256"
                 [ verifyBench @(ML SHA256) e
-                , verifyBench @(HT CR.SHA256) e
+                , verifyBench @(HT SHA256) e
                 ]
             , bgroup "SHA3_256"
                 [ verifyBench @(ML SHA3_256) e
-                , verifyBench @(HT CR.SHA3_256) e
+                , verifyBench @(HT SHA3_256) e
                 ]
             , bgroup "BLAKE2b_256"
                 [ verifyBench @(ML Blake2b_256) e
@@ -231,7 +231,7 @@ data HTProof a = HTProof
     {-# UNPACK #-} !(HT.InclusionProof a)
     {-# UNPACK #-} !B.ByteString
         -- ^ Proof subject (leaf)
-    {-# UNPACK #-} !(CR.Digest a)
+    {-# UNPACK #-} !(Digest a)
         -- ^ Root of the Tree
     deriving (Generic)
 
@@ -249,17 +249,17 @@ instance NFData (HT.InclusionProof a) where
 
 data HT a
 
-htSettings :: forall a . CR.HashAlgorithm a => HT.Settings B.ByteString a
+htSettings :: forall a . HashAlgorithm a => HT.Settings B.ByteString a
 htSettings = HT.defaultSettings
-    { HT.hash0 = CR.hash @B.ByteString @a mempty
-    , HT.hash1 = \x -> CR.hash @_ @a (B.singleton 0x00 `B.append` x)
-    , HT.hash2 = \x y -> CR.hash @_ @a $ B.concat [B.singleton 0x01, BA.convert x, BA.convert y]
+    { HT.hash0 = hash @B.ByteString @a mempty
+    , HT.hash1 = \x -> hash @_ @a (B.singleton 0x00 `B.append` x)
+    , HT.hash2 = \x y -> hash @_ @a $ B.concat [B.singleton 0x01, BA.convert x, BA.convert y]
     }
 
-instance (CR.HashAlgorithm a) => Impl (HT a) where
+instance (HashAlgorithm a) => Impl (HT a) where
     type Tree (HT a) = HT.MerkleHashTrees B.ByteString a
     type Proof (HT a) = HTProof a
-    type Root (HT a) = CR.Digest a
+    type Root (HT a) = Digest a
 
     label = "hash-tree"
     tree = HT.fromList htSettings
@@ -276,4 +276,3 @@ instance (CR.HashAlgorithm a) => Impl (HT a) where
     {-# INLINE root #-}
     {-# INLINE proof #-}
     {-# INLINE verify #-}
-
