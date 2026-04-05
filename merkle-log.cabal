@@ -1,10 +1,10 @@
 cabal-version: 2.4
 name: merkle-log
-version: 0.2.0
+version: 0.2.1
 synopsis: Merkle Tree Logs
 description: Binary Merkle Trees
-homepage: https://github.com/kadena-io/merkle-log
-bug-reports: https://github.com/kadena-io/merkle-log/issues
+homepage: https://github.com/kda-community/merkle-log
+bug-reports: https://github.com/kda-community/merkle-log/issues
 license: BSD-3-Clause
 license-file: LICENSE
 author: Lars Kuhtz
@@ -88,4 +88,3 @@ benchmark benchmarks
         , ram >=0.22
         , random >=1.2
         , transformers >= 0.6
-
