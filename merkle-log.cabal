@@ -33,14 +33,33 @@ library
         -Wall
     exposed-modules:
         Data.MerkleLog
+        Data.MerkleLog.Proof
+        Data.MerkleLog.Root
+        Data.MerkleLog.Utils
+        Data.MerkleLog.Common
+        Data.MerkleLog.Internal
+
+        Data.MerkleLog.V1
+        Data.MerkleLog.V1.Proof
+        Data.MerkleLog.V1.Tree
+        Data.MerkleLog.V1.Primitive
+        Data.MerkleLog.V1.Slice
+
+        -- Internal Tools
+        Data.MerkleLog.NullHash
     build-depends:
         , base >=4.11 && <5
+        , base64-bytestring >=1.0
         , bytestring >=0.10
         , crypton >=1.1.2
         , deepseq >=1.4
         , exceptions >=0.10
+        , hashes >= 0.3
         , ram >=0.22
         , text >=1.2
+
+        -- experimental
+        , streaming >=0.2.4
 
 test-suite test
     type: exitcode-stdio-1.0
@@ -56,12 +75,14 @@ test-suite test
         , merkle-log
 
         -- external
-        , QuickCheck >=2.11
+        , QuickCheck >=2.12
         , base >=4.11 && <5
         , bytestring >=0.10
         , crypton >=1.1.2
         , deepseq >=1.4
         , exceptions >=0.10
+        , hashes >= 0.3
+        , hspec >=2.11
         , ram >=0.22
 
 benchmark benchmarks
@@ -78,13 +99,37 @@ benchmark benchmarks
         , merkle-log
 
         -- external
-        , QuickCheck >=2.11
+        , QuickCheck >=2.12
         , base >=4.11 && <5
         , bytestring >=0.10
         , criterion >=1.5
         , crypton >=1.1.2
         , deepseq >=1.4
-        , hash-tree >=0.1.0
+
+        , hashes >= 0.3
+        , hash-tree >=0.0
+        , memory >=0.14
         , ram >=0.22
+
         , random >=1.2
+        , streaming >=0.2.4
         , transformers >= 0.6
+
+executable cli
+    hs-source-dirs: examples
+    ghc-options:
+        -Wall
+        -threaded
+        -with-rtsopts=-N
+    default-language: Haskell2010
+    main-is: Cli.hs
+    build-depends:
+        -- internal
+        , merkle-log
+
+        -- external
+        , base >=4.11 && <5
+        , base16 >= 1.0
+        , bytestring >=0.10
+        , hashes >= 0.3
+        , streaming >=0.2.4
