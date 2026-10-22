@@ -50,7 +50,7 @@ library
         Data.MerkleLog.NullHash
     build-depends:
         , base >=4.11 && <5
-        , base64-bytestring >=1.0
+        , base64 >= 2.1
         , bytestring >=0.10
         , crypton >=1.1.2
         , deepseq >=1.4

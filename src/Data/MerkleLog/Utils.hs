@@ -44,11 +44,10 @@ import Control.Exception qualified as E
 import Control.Monad.Catch
 import Data.Array.Byte
 import Data.ByteString qualified as B
+import Data.Base64.Types qualified as B64
 import Data.ByteString.Base64.URL qualified as B64
-import Data.ByteString.Char8 qualified as B8
 import Data.ByteString.Short qualified as BS
 import Data.Text qualified as T
-import Data.Text.Encoding qualified as T
 import GHC.ByteOrder
 import GHC.Exts
 import GHC.TypeNats
@@ -74,12 +73,10 @@ newtype Base64Encoded = Base64Encoded ByteArray
     deriving (Eq)
 
 instance Show Base64Encoded where
-    show (Base64Encoded b) = B8.unpack
-        $ B64.encodeUnpadded
-        $ BS.fromShort $ BS.ShortByteString b
+    show = T.unpack . b64 . fromByteArray . coerce
 
 b64 :: B.ByteString -> T.Text
-b64 = T.decodeUtf8 . B64.encodeUnpadded
+b64 = B64.extractBase64 . B64.encodeBase64Unpadded
 {-# INLINE b64 #-}
 
 -- --------------------------------------------------------------------------
@@ -138,4 +135,3 @@ tryAllSync act = E.try act >>= \case
         Nothing -> return $ Left e
     Right r -> return $ Right r
 {-# INLINE tryAllSync #-}
-
