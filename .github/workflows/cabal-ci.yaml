@@ -54,8 +54,9 @@ jobs:
       run: |
         cabal build all --dry-run
         cabal freeze
+
     - name: Install build dependencies
-      run: cabal build --only-dependencies
+      run: cabal build --only-dependencies lib:merkle-log cli test
 
     - name: Build library tests and cli
       run: cabal build lib:merkle-log cli test
