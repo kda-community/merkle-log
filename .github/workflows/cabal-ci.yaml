@@ -14,9 +14,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        ghc: ['9.6', '9.8', '9.10']
-        cabal: ['3.10']
-        os: ['ubuntu-22.04', 'ubuntu-24.04', 'macOS-latest']
+        ghc: ['9.14']
+        cabal: ['3.16']
+        os: ['ubuntu-22.04', 'ubuntu-24.04', 'ubuntu-26.04', 'macOS-latest']
 
     steps:
 
@@ -54,10 +54,12 @@ jobs:
       run: |
         cabal build all --dry-run
         cabal freeze
+
     - name: Install build dependencies
-      run: cabal build --only-dependencies
-    - name: Build library
-      run: cabal build
+      run: cabal build --only-dependencies lib:merkle-log cli test
+
+    - name: Build library tests and cli
+      run: cabal build lib:merkle-log cli test
 
     # Tests
     - name: Run Tests
