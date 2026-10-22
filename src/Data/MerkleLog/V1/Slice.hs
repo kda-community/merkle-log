@@ -7,6 +7,7 @@
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE TypeAbstractions #-}
 
 -- |
 -- Module: Data.MerkleLog.V1.Slice
@@ -156,4 +157,3 @@ hashSize#
     => Int#
 hashSize# = unI# (digestSize @a)
 {-# INLINE hashSize# #-}
-
